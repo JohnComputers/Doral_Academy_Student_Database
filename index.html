@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doral Academy Student Database</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── AUTH GATE ─────────────────────────────────────────── -->
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-mark">DA</div>
+    </div>
+    <h1 class="auth-title">Doral Academy</h1>
+    <p class="auth-subtitle">Student Database</p>
+    <div id="auth-error" class="auth-error hidden"></div>
+    <div class="field-group">
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" placeholder="admin@doralacademy.org" autocomplete="username" />
+    </div>
+    <div class="field-group">
+      <label for="login-password">Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button id="login-btn" class="btn btn-primary btn-full">Sign In</button>
+  </div>
+</div>
+
+<!-- ── MAIN APP ───────────────────────────────────────────── -->
+<div id="app" class="app hidden">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-mark small">DA</div>
+      <div>
+        <div class="brand-name">Doral Academy</div>
+        <div class="brand-sub">Student Database</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 20 20"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-view="students">
+        <svg viewBox="0 0 20 20"><circle cx="10" cy="6" r="3.5"/><path d="M2.5 17c0-4.142 3.358-7.5 7.5-7.5s7.5 3.358 7.5 7.5"/></svg>
+        All Students
+      </button>
+      <button class="nav-item" data-view="add">
+        <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.5"/><path d="M10 6v8M6 10h8"/></svg>
+        Add Student
+      </button>
+      <button class="nav-item" data-view="import">
+        <svg viewBox="0 0 20 20"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"/></svg>
+        Import CSV
+      </button>
+    </nav>
+
+    <button id="logout-btn" class="logout-btn">
+      <svg viewBox="0 0 20 20"><path d="M13 3h3a1 1 0 011 1v12a1 1 0 01-1 1h-3"/><path d="M9 14l4-4-4-4"/><path d="M13 10H3"/></svg>
+      Sign Out
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- ── DASHBOARD ── -->
+    <section id="view-dashboard" class="view active">
+      <header class="page-header">
+        <h2>Dashboard</h2>
+        <span id="last-updated" class="muted-text"></span>
+      </header>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Students</div>
+          <div class="stat-value" id="stat-total">—</div>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="stat-label">Attending</div>
+          <div class="stat-value" id="stat-attending">—</div>
+        </div>
+        <div class="stat-card accent-amber">
+          <div class="stat-label">Not Attending</div>
+          <div class="stat-value" id="stat-not-attending">—</div>
+        </div>
+        <div class="stat-card accent-blue">
+          <div class="stat-label">Competitions</div>
+          <div class="stat-value" id="stat-competitions">—</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3>Recent Students</h3>
+          <button class="btn btn-ghost" data-view="students">View All →</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Student ID</th>
+              <th>FAMAT ID</th>
+              <th>Competition</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="recent-tbody">
+            <tr><td colspan="5" class="empty-row">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── ALL STUDENTS ── -->
+    <section id="view-students" class="view">
+      <header class="page-header">
+        <h2>All Students</h2>
+        <div class="header-actions">
+          <input type="text" id="search-input" class="search-input" placeholder="Search by name, ID, competition…" />
+          <select id="filter-attending" class="select-input">
+            <option value="">All Statuses</option>
+            <option value="yes">Attending</option>
+            <option value="no">Not Attending</option>
+          </select>
+          <button id="export-btn" class="btn btn-ghost">Export CSV</button>
+        </div>
+      </header>
+
+      <div class="section-card no-padding">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th data-sort="lastName">Last Name <span class="sort-icon">↕</span></th>
+              <th data-sort="firstName">First Name <span class="sort-icon">↕</span></th>
+              <th data-sort="studentId">Student ID <span class="sort-icon">↕</span></th>
+              <th data-sort="famatId">FAMAT ID <span class="sort-icon">↕</span></th>
+              <th data-sort="competitionName">Competition <span class="sort-icon">↕</span></th>
+              <th data-sort="attending">Attending <span class="sort-icon">↕</span></th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="students-tbody">
+            <tr><td colspan="7" class="empty-row">Loading students…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="students-count" class="table-footer"></div>
+    </section>
+
+    <!-- ── ADD STUDENT ── -->
+    <section id="view-add" class="view">
+      <header class="page-header">
+        <h2 id="form-title">Add Student</h2>
+      </header>
+
+      <div class="section-card form-card">
+        <div id="form-success" class="alert alert-success hidden"></div>
+        <div id="form-error" class="alert alert-error hidden"></div>
+
+        <div class="form-grid">
+          <div class="field-group">
+            <label for="f-firstName">First Name <span class="required">*</span></label>
+            <input type="text" id="f-firstName" placeholder="e.g. Maria" />
+          </div>
+          <div class="field-group">
+            <label for="f-lastName">Last Name <span class="required">*</span></label>
+            <input type="text" id="f-lastName" placeholder="e.g. Garcia" />
+          </div>
+          <div class="field-group">
+            <label for="f-studentId">Student ID <span class="required">*</span></label>
+            <input type="text" id="f-studentId" placeholder="e.g. 123456" />
+          </div>
+          <div class="field-group">
+            <label for="f-famatId">FAMAT ID</label>
+            <input type="text" id="f-famatId" placeholder="e.g. FAM-00123" />
+          </div>
+          <div class="field-group">
+            <label for="f-competitionName">Competition Name <span class="required">*</span></label>
+            <input type="text" id="f-competitionName" placeholder="e.g. FAMAT State Tournament 2025" />
+          </div>
+          <div class="field-group">
+            <label for="f-attending">Attending <span class="required">*</span></label>
+            <select id="f-attending">
+              <option value="">— Select —</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+        </div>
+
+        <input type="hidden" id="f-edit-id" />
+
+        <div class="form-actions">
+          <button id="cancel-edit-btn" class="btn btn-ghost hidden">Cancel Edit</button>
+          <button id="save-btn" class="btn btn-primary">Save Student</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── IMPORT CSV ── -->
+    <section id="view-import" class="view">
+      <header class="page-header">
+        <h2>Import from CSV</h2>
+      </header>
+
+      <div class="section-card">
+        <h3 class="sub-section-title">Expected CSV Format</h3>
+        <p class="muted-text" style="margin-bottom:12px;">Your CSV must have these column headers in the first row (order doesn't matter):</p>
+        <div class="code-block">firstName, lastName, famatId, attending, competitionName, studentId</div>
+        <p class="muted-text" style="margin-top:8px;">The <code>attending</code> column should be <code>yes</code> or <code>no</code>.</p>
+
+        <div class="import-drop-zone" id="drop-zone">
+          <svg viewBox="0 0 48 48" class="upload-icon"><path d="M24 8v24M14 18l10-10 10 10"/><path d="M8 36h32"/></svg>
+          <p>Drag &amp; drop your CSV file here</p>
+          <span class="muted-text">or</span>
+          <label class="btn btn-ghost" for="csv-file-input" style="cursor:pointer;">Browse File</label>
+          <input type="file" id="csv-file-input" accept=".csv" style="display:none;" />
+        </div>
+
+        <div id="import-preview" class="hidden">
+          <div class="import-preview-header">
+            <span id="import-count"></span>
+            <div>
+              <button id="import-cancel-btn" class="btn btn-ghost">Cancel</button>
+              <button id="import-confirm-btn" class="btn btn-primary">Import All</button>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>First Name</th><th>Last Name</th><th>Student ID</th>
+                <th>FAMAT ID</th><th>Competition</th><th>Attending</th>
+              </tr>
+            </thead>
+            <tbody id="import-preview-tbody"></tbody>
+          </table>
+        </div>
+
+        <div id="import-result" class="hidden"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── EDIT MODAL ── -->
+<div id="edit-modal" class="modal-backdrop hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Edit Student</h3>
+      <button class="modal-close" id="modal-close-btn">✕</button>
+    </div>
+    <div id="modal-error" class="alert alert-error hidden"></div>
+    <div class="form-grid">
+      <div class="field-group">
+        <label for="m-firstName">First Name</label>
+        <input type="text" id="m-firstName" />
+      </div>
+      <div class="field-group">
+        <label for="m-lastName">Last Name</label>
+        <input type="text" id="m-lastName" />
+      </div>
+      <div class="field-group">
+        <label for="m-studentId">Student ID</label>
+        <input type="text" id="m-studentId" />
+      </div>
+      <div class="field-group">
+        <label for="m-famatId">FAMAT ID</label>
+        <input type="text" id="m-famatId" />
+      </div>
+      <div class="field-group">
+        <label for="m-competitionName">Competition Name</label>
+        <input type="text" id="m-competitionName" />
+      </div>
+      <div class="field-group">
+        <label for="m-attending">Attending</label>
+        <select id="m-attending">
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+    </div>
+    <input type="hidden" id="m-doc-id" />
+    <div class="form-actions">
+      <button class="btn btn-danger" id="modal-delete-btn">Delete Student</button>
+      <button class="btn btn-primary" id="modal-save-btn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRM ── -->
+<div id="confirm-modal" class="modal-backdrop hidden">
+  <div class="modal-card modal-small">
+    <h3>Delete Student?</h3>
+    <p class="muted-text" id="confirm-name" style="margin:12px 0;"></p>
+    <p style="margin-bottom:20px;">This action cannot be undone.</p>
+    <div class="form-actions">
+      <button class="btn btn-ghost" id="confirm-cancel-btn">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // ── Wait for config to load ──────────────────────────────
+  const config = window.FIREBASE_CONFIG;
+  if (!config || config.apiKey === "YOUR_API_KEY") {
+    document.getElementById("auth-overlay").innerHTML = `
+      <div class="auth-card">
+        <div class="auth-logo"><div class="logo-mark">DA</div></div>
+        <h1 class="auth-title">Setup Required</h1>
+        <p class="auth-subtitle" style="color:#c0392b;margin-top:12px;">Please open <strong>firebase-config.js</strong> and fill in your Firebase project credentials before using this app.</p>
+        <p class="auth-subtitle" style="margin-top:12px;">See the instructions inside that file for step-by-step setup.</p>
+      </div>`;
+    throw new Error("Firebase not configured.");
+  }
+
+  const app = initializeApp(config);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const COLLECTION = "students";
+
+  // ── State ────────────────────────────────────────────────
+  let allStudents = [];
+  let sortField = "lastName";
+  let sortDir = 1;
+  let pendingDeleteId = null;
+
+  // ── Auth ─────────────────────────────────────────────────
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      document.getElementById("auth-overlay").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      loadStudents();
+    } else {
+      document.getElementById("auth-overlay").classList.remove("hidden");
+      document.getElementById("app").classList.add("hidden");
+    }
+  });
+
+  document.getElementById("login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const pw = document.getElementById("login-password").value;
+    const errEl = document.getElementById("auth-error");
+    errEl.classList.add("hidden");
+    try {
+      await signInWithEmailAndPassword(auth, email, pw);
+    } catch (e) {
+      errEl.textContent = "Invalid email or password.";
+      errEl.classList.remove("hidden");
+    }
+  });
+
+  document.getElementById("login-password").addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("login-btn").click();
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
+
+  // ── Navigation ───────────────────────────────────────────
+  document.querySelectorAll("[data-view]").forEach(btn => {
+    btn.addEventListener("click", () => switchView(btn.dataset.view));
+  });
+
+  function switchView(name) {
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+    document.getElementById(`view-${name}`).classList.add("active");
+    document.querySelector(`.nav-item[data-view="${name}"]`)?.classList.add("active");
+    if (name === "students") renderStudentsTable();
+    if (name === "dashboard") renderDashboard();
+  }
+
+  // ── Firestore CRUD ───────────────────────────────────────
+  async function loadStudents() {
+    try {
+      const snap = await getDocs(collection(db, COLLECTION));
+      allStudents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderDashboard();
+      renderStudentsTable();
+      document.getElementById("last-updated").textContent = "Updated " + new Date().toLocaleTimeString();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function saveStudent(data) {
+    await addDoc(collection(db, COLLECTION), { ...data, createdAt: Date.now() });
+    await loadStudents();
+  }
+
+  async function updateStudent(id, data) {
+    await updateDoc(doc(db, COLLECTION, id), data);
+    await loadStudents();
+  }
+
+  async function deleteStudent(id) {
+    await deleteDoc(doc(db, COLLECTION, id));
+    await loadStudents();
+  }
+
+  // ── Dashboard ────────────────────────────────────────────
+  function renderDashboard() {
+    const total = allStudents.length;
+    const attending = allStudents.filter(s => s.attending === "yes").length;
+    const notAttending = allStudents.filter(s => s.attending === "no").length;
+    const comps = new Set(allStudents.map(s => s.competitionName).filter(Boolean)).size;
+
+    document.getElementById("stat-total").textContent = total;
+    document.getElementById("stat-attending").textContent = attending;
+    document.getElementById("stat-not-attending").textContent = notAttending;
+    document.getElementById("stat-competitions").textContent = comps;
+
+    const recent = [...allStudents].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 8);
+    const tbody = document.getElementById("recent-tbody");
+    tbody.innerHTML = recent.length
+      ? recent.map(s => `<tr>
+          <td>${esc(s.firstName)} ${esc(s.lastName)}</td>
+          <td class="mono">${esc(s.studentId)}</td>
+          <td class="mono">${esc(s.famatId)}</td>
+          <td>${esc(s.competitionName)}</td>
+          <td>${attendingBadge(s.attending)}</td>
+        </tr>`).join("")
+      : `<tr><td colspan="5" class="empty-row">No students yet. Add one to get started.</td></tr>`;
+  }
+
+  // ── Students Table ────────────────────────────────────────
+  function renderStudentsTable() {
+    const q = document.getElementById("search-input").value.toLowerCase();
+    const filterAtt = document.getElementById("filter-attending").value;
+
+    let filtered = allStudents.filter(s => {
+      const match = !q || [s.firstName, s.lastName, s.studentId, s.famatId, s.competitionName]
+        .some(v => (v || "").toLowerCase().includes(q));
+      const attMatch = !filterAtt || s.attending === filterAtt;
+      return match && attMatch;
+    });
+
+    filtered.sort((a, b) => {
+      const va = (a[sortField] || "").toString().toLowerCase();
+      const vb = (b[sortField] || "").toString().toLowerCase();
+      return sortDir * va.localeCompare(vb);
+    });
+
+    const tbody = document.getElementById("students-tbody");
+    tbody.innerHTML = filtered.length
+      ? filtered.map(s => `<tr>
+          <td>${esc(s.lastName)}</td>
+          <td>${esc(s.firstName)}</td>
+          <td class="mono">${esc(s.studentId)}</td>
+          <td class="mono">${esc(s.famatId)}</td>
+          <td>${esc(s.competitionName)}</td>
+          <td>${attendingBadge(s.attending)}</td>
+          <td><button class="btn-edit" data-id="${s.id}">Edit</button></td>
+        </tr>`).join("")
+      : `<tr><td colspan="7" class="empty-row">No students match your search.</td></tr>`;
+
+    document.getElementById("students-count").textContent =
+      `Showing ${filtered.length} of ${allStudents.length} student${allStudents.length !== 1 ? "s" : ""}`;
+
+    tbody.querySelectorAll(".btn-edit").forEach(btn => {
+      btn.addEventListener("click", () => openEditModal(btn.dataset.id));
+    });
+  }
+
+  // Sort headers
+  document.querySelectorAll("th[data-sort]").forEach(th => {
+    th.style.cursor = "pointer";
+    th.addEventListener("click", () => {
+      if (sortField === th.dataset.sort) sortDir *= -1;
+      else { sortField = th.dataset.sort; sortDir = 1; }
+      renderStudentsTable();
+    });
+  });
+
+  document.getElementById("search-input").addEventListener("input", renderStudentsTable);
+  document.getElementById("filter-attending").addEventListener("change", renderStudentsTable);
+
+  // ── Add Student Form ──────────────────────────────────────
+  document.getElementById("save-btn").addEventListener("click", async () => {
+    const firstName = document.getElementById("f-firstName").value.trim();
+    const lastName = document.getElementById("f-lastName").value.trim();
+    const studentId = document.getElementById("f-studentId").value.trim();
+    const famatId = document.getElementById("f-famatId").value.trim();
+    const competitionName = document.getElementById("f-competitionName").value.trim();
+    const attending = document.getElementById("f-attending").value;
+
+    const errEl = document.getElementById("form-error");
+    const sucEl = document.getElementById("form-success");
+    errEl.classList.add("hidden");
+    sucEl.classList.add("hidden");
+
+    if (!firstName || !lastName || !studentId || !competitionName || !attending) {
+      errEl.textContent = "Please fill in all required fields.";
+      errEl.classList.remove("hidden");
+      return;
+    }
+
+    try {
+      await saveStudent({ firstName, lastName, studentId, famatId, competitionName, attending });
+      sucEl.textContent = `${firstName} ${lastName} added successfully!`;
+      sucEl.classList.remove("hidden");
+      ["f-firstName","f-lastName","f-studentId","f-famatId","f-competitionName"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("f-attending").value = "";
+    } catch (e) {
+      errEl.textContent = "Error saving student. Check console.";
+      errEl.classList.remove("hidden");
+    }
+  });
+
+  // ── Edit Modal ────────────────────────────────────────────
+  function openEditModal(id) {
+    const s = allStudents.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById("m-firstName").value = s.firstName || "";
+    document.getElementById("m-lastName").value = s.lastName || "";
+    document.getElementById("m-studentId").value = s.studentId || "";
+    document.getElementById("m-famatId").value = s.famatId || "";
+    document.getElementById("m-competitionName").value = s.competitionName || "";
+    document.getElementById("m-attending").value = s.attending || "yes";
+    document.getElementById("m-doc-id").value = id;
+    document.getElementById("modal-error").classList.add("hidden");
+    document.getElementById("edit-modal").classList.remove("hidden");
+  }
+
+  document.getElementById("modal-close-btn").addEventListener("click", () =>
+    document.getElementById("edit-modal").classList.add("hidden"));
+
+  document.getElementById("edit-modal").addEventListener("click", e => {
+    if (e.target === document.getElementById("edit-modal"))
+      document.getElementById("edit-modal").classList.add("hidden");
+  });
+
+  document.getElementById("modal-save-btn").addEventListener("click", async () => {
+    const id = document.getElementById("m-doc-id").value;
+    const errEl = document.getElementById("modal-error");
+    try {
+      await updateStudent(id, {
+        firstName: document.getElementById("m-firstName").value.trim(),
+        lastName: document.getElementById("m-lastName").value.trim(),
+        studentId: document.getElementById("m-studentId").value.trim(),
+        famatId: document.getElementById("m-famatId").value.trim(),
+        competitionName: document.getElementById("m-competitionName").value.trim(),
+        attending: document.getElementById("m-attending").value,
+      });
+      document.getElementById("edit-modal").classList.add("hidden");
+    } catch (e) {
+      errEl.textContent = "Error updating. Please try again.";
+      errEl.classList.remove("hidden");
+    }
+  });
+
+  document.getElementById("modal-delete-btn").addEventListener("click", () => {
+    const id = document.getElementById("m-doc-id").value;
+    const s = allStudents.find(x => x.id === id);
+    pendingDeleteId = id;
+    document.getElementById("confirm-name").textContent = `"${s.firstName} ${s.lastName}"`;
+    document.getElementById("confirm-modal").classList.remove("hidden");
+  });
+
+  document.getElementById("confirm-cancel-btn").addEventListener("click", () => {
+    pendingDeleteId = null;
+    document.getElementById("confirm-modal").classList.add("hidden");
+  });
+
+  document.getElementById("confirm-delete-btn").addEventListener("click", async () => {
+    if (!pendingDeleteId) return;
+    await deleteStudent(pendingDeleteId);
+    pendingDeleteId = null;
+    document.getElementById("confirm-modal").classList.add("hidden");
+    document.getElementById("edit-modal").classList.add("hidden");
+  });
+
+  // ── CSV Export ────────────────────────────────────────────
+  document.getElementById("export-btn").addEventListener("click", () => {
+    const headers = ["firstName","lastName","studentId","famatId","competitionName","attending"];
+    const rows = [headers.join(","), ...allStudents.map(s =>
+      headers.map(h => `"${(s[h] || "").replace(/"/g,'""')}"`).join(","))];
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "students.csv" });
+    a.click();
+  });
+
+  // ── CSV Import ────────────────────────────────────────────
+  let parsedRows = [];
+
+  function setupImport() {
+    const dropZone = document.getElementById("drop-zone");
+    const fileInput = document.getElementById("csv-file-input");
+
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+    dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("drag-over"); handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => parseCSV(e.target.result);
+    reader.readAsText(file);
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, "").toLowerCase());
+
+    const fieldMap = {
+      firstname: "firstName", lastname: "lastName", famatid: "famatId",
+      attending: "attending", competitionname: "competitionName", studentid: "studentId"
+    };
+
+    parsedRows = lines.slice(1).map(line => {
+      const vals = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+      const obj = {};
+      headers.forEach((h, i) => { if (fieldMap[h]) obj[fieldMap[h]] = vals[i] || ""; });
+      return obj;
+    }).filter(r => r.firstName || r.lastName);
+
+    const tbody = document.getElementById("import-preview-tbody");
+    tbody.innerHTML = parsedRows.map(s => `<tr>
+      <td>${esc(s.firstName)}</td><td>${esc(s.lastName)}</td><td class="mono">${esc(s.studentId)}</td>
+      <td class="mono">${esc(s.famatId)}</td><td>${esc(s.competitionName)}</td><td>${attendingBadge(s.attending)}</td>
+    </tr>`).join("");
+
+    document.getElementById("import-count").textContent = `${parsedRows.length} student${parsedRows.length !== 1 ? "s" : ""} found`;
+    document.getElementById("import-preview").classList.remove("hidden");
+    document.getElementById("import-result").classList.add("hidden");
+  }
+
+  document.getElementById("import-cancel-btn").addEventListener("click", () => {
+    parsedRows = [];
+    document.getElementById("import-preview").classList.add("hidden");
+    document.getElementById("csv-file-input").value = "";
+  });
+
+  document.getElementById("import-confirm-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("import-confirm-btn");
+    btn.disabled = true;
+    btn.textContent = "Importing…";
+    try {
+      for (const row of parsedRows) {
+        await addDoc(collection(db, COLLECTION), { ...row, createdAt: Date.now() });
+      }
+      await loadStudents();
+      const resEl = document.getElementById("import-result");
+      resEl.className = "alert alert-success";
+      resEl.textContent = `✓ Successfully imported ${parsedRows.length} student${parsedRows.length !== 1 ? "s" : ""}.`;
+      resEl.classList.remove("hidden");
+      parsedRows = [];
+      document.getElementById("import-preview").classList.add("hidden");
+      document.getElementById("csv-file-input").value = "";
+    } catch (e) {
+      const resEl = document.getElementById("import-result");
+      resEl.className = "alert alert-error";
+      resEl.textContent = "Import failed. Check your Firebase config.";
+      resEl.classList.remove("hidden");
+    }
+    btn.disabled = false;
+    btn.textContent = "Import All";
+  });
+
+  setupImport();
+
+  // ── Helpers ───────────────────────────────────────────────
+  function esc(str) {
+    return (str || "—").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function attendingBadge(val) {
+    if (val === "yes") return `<span class="badge badge-yes">Yes</span>`;
+    if (val === "no") return `<span class="badge badge-no">No</span>`;
+    return `<span class="badge badge-unknown">—</span>`;
+  }
+</script>
+
+<!-- Config must load before module script evaluates window.FIREBASE_CONFIG -->
+<script src="firebase-config.js"></script>
+
+</body>
+</html>
