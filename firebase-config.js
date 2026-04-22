@@ -11,12 +11,12 @@
 // ============================================================
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAY6Vu0AEduvpUFrRNq8TuJkr_kiAVhSRc",
+  authDomain: "doralacademystudentdatabase.firebaseapp.com",
+  projectId: "doralacademystudentdatabase",
+  storageBucket: "doralacademystudentdatabase.firebasestorage.app",
+  messagingSenderId: "122567063966",
+  appId: "1:122567063966:web:f76fa1329c3987090bbe8f"
 };
 
 // Export for use in the app
