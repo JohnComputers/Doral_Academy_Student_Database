@@ -331,22 +331,22 @@
 
       <div class="report-grid">
         <div class="report-card active" data-report="checklist">
-          <svg class="report-card-icon" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/><path d="M6 8l1 1M6 12l1 1M6 16l1 1"/></svg>
+          <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/><path d="M6 8l1 1M6 12l1 1M6 16l1 1"/></svg>
           <h4>Attendance Checklist</h4>
           <p>Sorted A→Z by last name. 10 blank boxes + phone column. Ideal for roll call.</p>
         </div>
         <div class="report-card" data-report="going-list">
-          <svg class="report-card-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+          <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
           <h4>Going List</h4>
           <p>Clean list of who's attending a specific competition, with grade &amp; division.</p>
         </div>
         <div class="report-card" data-report="not-going">
-          <svg class="report-card-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+          <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
           <h4>Not Going List</h4>
           <p>Students opted out of a competition — useful for cross-reference.</p>
         </div>
         <div class="report-card" data-report="full-roster">
-          <svg class="report-card-icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1" fill="currentColor"/><circle cx="8" cy="12" r="1" fill="currentColor"/><circle cx="8" cy="18" r="1" fill="currentColor"/></svg>
+          <svg class="report-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>
           <h4>Full Roster</h4>
           <p>Every student with all info: phone, school, grade, division, all competitions.</p>
         </div>
@@ -531,22 +531,70 @@
 
   // ── Load & Save ──
   async function loadAll() {
+    const lastUpdated = document.getElementById("last-updated");
+    let studentsOk = false, compsOk = false;
+    let studentErr = null, compErr = null;
+
     try {
-      const [sSnap, cSnap] = await Promise.all([
-        getDocs(collection(db, STUDENTS)),
-        getDocs(collection(db, COMPS))
-      ]);
+      const sSnap = await getDocs(collection(db, STUDENTS));
       allStudents = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
       allStudents.forEach(s => { if (!Array.isArray(s.competitions)) s.competitions = []; });
+      studentsOk = true;
+    } catch (e) {
+      console.error("Failed to load students:", e);
+      studentErr = e;
+      allStudents = [];
+    }
+
+    try {
+      const cSnap = await getDocs(collection(db, COMPS));
       allComps = cSnap.docs.map(d => ({ id: d.id, ...d.data() }))
                           .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-      renderDashboard();
-      renderStudentsTable();
-      renderCompetitions();
-      renderAddFormComps();
-      populateCompFilter();
-      document.getElementById("last-updated").textContent = "Updated " + new Date().toLocaleTimeString();
-    } catch (e) { console.error(e); }
+      compsOk = true;
+    } catch (e) {
+      console.error("Failed to load competitions:", e);
+      compErr = e;
+      allComps = [];
+    }
+
+    // Always render so the UI doesn't get stuck
+    renderDashboard();
+    renderStudentsTable();
+    renderCompetitions();
+    renderAddFormComps();
+    populateCompFilter();
+    lastUpdated.textContent = "Updated " + new Date().toLocaleTimeString();
+
+    // Surface permission errors to the user
+    if (!studentsOk || !compsOk) {
+      showGlobalError(studentErr, compErr);
+    } else {
+      hideGlobalError();
+    }
+  }
+
+  function showGlobalError(studentErr, compErr) {
+    let bar = document.getElementById("global-error-bar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "global-error-bar";
+      bar.style.cssText = "position:fixed;top:0;left:0;right:0;background:#b52a2a;color:white;padding:12px 20px;font-size:13px;z-index:800;box-shadow:0 2px 8px rgba(0,0,0,.2);";
+      document.body.appendChild(bar);
+    }
+    const isPermission = (studentErr && /permission/i.test(studentErr.message || "")) ||
+                         (compErr && /permission/i.test(compErr.message || ""));
+    if (isPermission) {
+      bar.innerHTML = `<strong>⚠ Firestore permission denied.</strong>
+        Your Firestore security rules need to allow access to both the <code style="background:rgba(255,255,255,.2);padding:2px 6px;border-radius:3px;">students</code> and <code style="background:rgba(255,255,255,.2);padding:2px 6px;border-radius:3px;">competitions</code> collections.
+        See the README for the exact rules to paste. Go to Firebase Console → Firestore → Rules.`;
+    } else {
+      const msg = (studentErr || compErr || {}).message || "Unknown error";
+      bar.innerHTML = `<strong>⚠ Error loading data:</strong> ${esc(msg)}`;
+    }
+  }
+  function hideGlobalError() {
+    const bar = document.getElementById("global-error-bar");
+    if (bar) bar.remove();
   }
 
   // ── Dashboard ──
@@ -699,7 +747,8 @@
       document.querySelectorAll(".add-comp-check").forEach(cb => cb.checked = false);
       await loadAll();
     } catch (e) {
-      errEl.textContent = "Error saving student.";
+      console.error(e);
+      errEl.textContent = "Error saving student: " + e.message + " — check Firestore security rules.";
       errEl.classList.remove("hidden");
     }
   });
@@ -811,13 +860,26 @@
 
   // ── Competitions ──
   document.getElementById("add-comp-btn").addEventListener("click", async () => {
-    const name = document.getElementById("new-comp-name").value.trim();
-    const date = document.getElementById("new-comp-date").value.trim();
-    if (!name) return;
-    await addDoc(collection(db, COMPS), { name, date, createdAt: Date.now() });
-    document.getElementById("new-comp-name").value = "";
-    document.getElementById("new-comp-date").value = "";
-    await loadAll();
+    const nameInput = document.getElementById("new-comp-name");
+    const dateInput = document.getElementById("new-comp-date");
+    const btn = document.getElementById("add-comp-btn");
+    const name = nameInput.value.trim();
+    const date = dateInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    btn.disabled = true;
+    const origText = btn.textContent;
+    btn.textContent = "Adding…";
+    try {
+      await addDoc(collection(db, COMPS), { name, date, createdAt: Date.now() });
+      nameInput.value = "";
+      dateInput.value = "";
+      await loadAll();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to add competition: " + e.message + "\n\nThis usually means your Firestore security rules block writes to the 'competitions' collection. See the README for the correct rules.");
+    }
+    btn.disabled = false;
+    btn.textContent = origText;
   });
 
   function renderCompetitions() {
